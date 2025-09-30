@@ -1,0 +1,24 @@
+# This git configuration file transforms file encoding. Rules follow the order in which they are defined. 
+# Generic rules like "**" are overridden by specific rules like "**.md".
+# On USS, encoding information is stored in a file's tag. Use the cmd "ls -lasT" to show the "T" Tag.
+
+# ** This is a generic rule for all files (*) to convert ASCII (UTF-8) to zos-compatible (IBM-1047) EBCDIC.
+#    This includes all application source code across all (**) folders
+**              zos-working-tree-encoding=ibm-1047 git-encoding=utf-8
+
+# DBB v3 yaml & Conf 
+conf/build/*.yaml zos-working-tree-encoding=iso8859-1 git-encoding=utf-8
+conf/build/*.conf zos-working-tree-encoding=iso8859-1 git-encoding=utf-8
+# ** Specific rule maintains the required IBM ascii encoding of this git-file. 
+.gitattributes  zos-working-tree-encoding=iso8859-1 git-encoding=utf-8
+ 
+# ** These specific rules are for various doc-related files.
+**.md           zos-working-tree-encoding=utf-8 git-encoding=utf-8
+**.png binary
+**.jar* binary
+**.rec binary
+**.docx binary
+**.pptx binary
+
+# ** Manage the new line conversion for text files
+text            eol=lf
