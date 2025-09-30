@@ -1,0 +1,8 @@
+DSN SYSTEM(DSN9)            
+  BIND PACKAGE(DEV2)       -
+       MEMBER(EPSCMORT)    -
+       OWNER(DEVDBA)       -
+       QUALIFIER(DEVDBA)   -
+       ACTION(REPLACE)     -
+       ISOLATION(CS)        
+END                         

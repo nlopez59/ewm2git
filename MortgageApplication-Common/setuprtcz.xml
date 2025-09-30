@@ -1,0 +1,825 @@
+<?xml version="1.0"?>
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2012,2013. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:
+    Use, duplication or disclosure restricted by GSA ADP Schedule
+    Contract with IBM Corp.
+ -->
+
+<project name="MortgageApplication" default="all" xmlns:ld="antlib:com.ibm.team.enterprise.zos.systemdefinition.toolkit">
+	<description>Sample build script</description>
+
+	<!-- Uncomment the following line to enable compiler error feedback. -->
+	<!-- <property name="use.error.feedback" value="true"/>   -->
+
+	<!-- Uncomment one of the following two lines to enable DB2 BIND support. -->
+	<!-- <property name="use.bind_1" value="true"/> -->
+	<!-- <property name="use.bind_2" value="true"/> -->
+
+	<!-- Install location of compilers, etc. -->
+	<property name="prefix.asm"   value="ASM"/>
+	<property name="prefix.cobol" value="IGY.V6R4M0"/>
+	<property name="prefix.cics"  value="DFH.V6R2M0.CICS"/>
+	<property name="prefix.db2"   value="DSN.V13R1M0"/>
+	<property name="prefix.rdz"   value="FEL.V16R0M0"/>
+	<property name="prefix.ims1"  value="DFS.V15R1M0"/>
+	<property name="prefix.ims2"  value="JAZZ00.IMS11"/>
+	
+	<property name="resource.def.prefix" value="Bruce-" />
+	<property name="resource.def.suffix" value="" />
+
+	<condition property="nonstandard.resource.names">
+		<or>
+			<matches pattern="\S+" string="${resource.def.suffix}"/>
+			<matches pattern="\S+" string="${resource.def.prefix}"/>
+		</or>
+	</condition>
+
+	<!-- Data set definition names -->
+	<property name="dsdef.bind.source"    value="${resource.def.prefix}BIND files${resource.def.suffix}"/>
+	<property name="dsdef.bms.source"     value="${resource.def.prefix}BMS maps${resource.def.suffix}"/>
+	<property name="dsdef.mfs.source"     value="${resource.def.prefix}MFS maps${resource.def.suffix}"/>
+	<property name="dsdef.mfs.tformat"    value="${resource.def.prefix}MFS TFORMAT${resource.def.suffix}"/>
+	<property name="dsdef.cobol.source"   value="${resource.def.prefix}COBOL source codes${resource.def.suffix}"/>
+	<property name="dsdef.copybook"       value="${resource.def.prefix}Copybooks${resource.def.suffix}"/>
+	<property name="dsdef.bmscpybk"       value="${resource.def.prefix}Copybooks generated from BMS maps${resource.def.suffix}"/>
+	<property name="dsdef.link"           value="${resource.def.prefix}Link-edit control files${resource.def.suffix}"/>
+	<property name="dsdef.rexx"           value="${resource.def.prefix}REXX scripts${resource.def.suffix}"/>
+	<property name="dsdef.obj"            value="${resource.def.prefix}Object decks${resource.def.suffix}"/>
+	<property name="dsdef.seqobj"         value="${resource.def.prefix}Sequential Object deck${resource.def.suffix}"/>
+	<property name="dsdef.dummy"          value="${resource.def.prefix}Dummy${resource.def.suffix}"/>
+	<property name="dsdef.dbrm"           value="${resource.def.prefix}DBRM library${resource.def.suffix}"/>
+	<property name="dsdef.load"           value="${resource.def.prefix}Program objects${resource.def.suffix}"/>
+	<property name="dsdef.temp"           value="${resource.def.prefix}Temporary file${resource.def.suffix}"/>
+	<property name="dsdef.temp.obj"       value="${resource.def.prefix}Temporary file (object deck)${resource.def.suffix}"/>
+	<property name="dsdef.temp.mfs"       value="${resource.def.prefix}Temporary file (MFS seqblk)${resource.def.suffix}"/>
+	<property name="dsdef.temp.pds"       value="${resource.def.prefix}Temporary PDS${resource.def.suffix}"/>
+	<property name="dsdef.assembler"      value="${resource.def.prefix}Assembler${resource.def.suffix}"/>
+	<property name="dsdef.cobol.compiler" value="${resource.def.prefix}COBOL compiler${resource.def.suffix}"/>
+	<property name="dsdef.cobol.sigycomp" value="${resource.def.prefix}COBOL.SIGYCOMP${resource.def.suffix}"/>
+	<property name="dsdef.linkeditor"     value="${resource.def.prefix}Link-editor${resource.def.suffix}"/>
+	<property name="dsdef.sys1.maclib"    value="${resource.def.prefix}SYS1.MACLIB${resource.def.suffix}"/>
+	<property name="dsdef.cee.sceelked"   value="${resource.def.prefix}CEE.SCEELKED${resource.def.suffix}"/>
+	<property name="dsdef.cics.sdfhcob"   value="${resource.def.prefix}CICS.SDFHCOB${resource.def.suffix}"/>
+	<property name="dsdef.cics.sdfhload"  value="${resource.def.prefix}CICS.SDFHLOAD${resource.def.suffix}"/>
+	<property name="dsdef.cics.sdfhmac"   value="${resource.def.prefix}CICS.SDFHMAC${resource.def.suffix}"/>
+	<property name="dsdef.db2.sdsnload"   value="${resource.def.prefix}DB2.SDSNLOAD${resource.def.suffix}"/>
+	<property name="dsdef.rdz.sfekload"   value="${resource.def.prefix}WDZ.SFEKLOAD${resource.def.suffix}"/>
+	<property name="dsdef.ims.sdfsresl"   value="${resource.def.prefix}IMS RESLIB${resource.def.suffix}"/>
+	<property name="dsdef.ims.sdfsmac"    value="${resource.def.prefix}IMS SDFSMAC${resource.def.suffix}"/>
+	<property name="dsdef.iebgener"       value="${resource.def.prefix}IEBGENER${resource.def.suffix}"/>
+	<property name="dsdef.idcams"         value="${resource.def.prefix}IDCAMS${resource.def.suffix}"/>
+	<property name="dsdef.ims.referal"    value="${resource.def.prefix}IMS REFERAL${resource.def.suffix}"/>
+	<property name="dsdef.mfs.phase1"     value="${resource.def.prefix}MFS Language Utility - Phase 1${resource.def.suffix}"/>
+	<property name="dsdef.mfs.phase2"     value="${resource.def.prefix}MFS Language Utility - Phase 2${resource.def.suffix}"/>
+	<property name="dsdef.vsam.data"	  value="${resource.def.prefix}VSAMDATA${resource.def.suffix}"/>
+	<property name="dsdef.vsam.file"	  value="${resource.def.prefix}VSAMFILE${resource.def.suffix}"/>
+
+	<!-- Translator names and compiler options -->
+	<property name="translator.bms.obj"                		value="${resource.def.prefix}BMS map processing (object deck generation)${resource.def.suffix}"/>
+	<property name="translator.bms.obj.options"        		value="SYSPARM(MAP),DECK,NOOBJECT"/>
+	<property name="translator.bms.copy"               		value="${resource.def.prefix}BMS map processing (copybook generation)${resource.def.suffix}"/>
+	<property name="translator.bms.copy.options"       		value="SYSPARM(DSECT),DECK,NOOBJECT"/>
+	<property name="translator.mfs.phase1"               	value="${resource.def.prefix}MFS Language Utility - Phase 1${resource.def.suffix}"/>
+	<property name="translator.mfs.phase1.options"       	value="NOXREF,NOCOMP,NOSUBS,NODIAG,NOCOMPRESS,LINECNT=55,STOPRC=8,DEVCHAR=I"/>
+	<property name="translator.mfs.phase2"               	value="${resource.def.prefix}MFS Language Utility - Phase 2${resource.def.suffix}"/>
+	<property name="translator.mfs.phase2.options"       	value="TEST"/>
+	<property name="translator.cobol.obj"              		value="${resource.def.prefix}COBOL compilation (for subroutines)${resource.def.suffix}"/>
+	<property name="translator.cobol.obj.options"      		value="LIB,DYNAM,CICS"/>
+	<property name="translator.cobol"                  		value="${resource.def.prefix}COBOL compilation${resource.def.suffix}"/>
+	<property name="translator.cobol.options"          		value="LIB"/>
+	<property name="translator.cobol.cics"             		value="${resource.def.prefix}COBOL compilation (CICS)${resource.def.suffix}"/>
+	<property name="translator.cobol.cics.options"     		value="LIB,DYNAM,CICS"/>
+	<property name="translator.cobol.cicsdb2"          		value="${resource.def.prefix}COBOL compilation (CICS&amp;DB2)${resource.def.suffix}"/>
+	<property name="translator.cobol.cicsdb2.options"  		value="LIB,DYNAM,CICS,SQL"/>
+	<property name="translator.linkedit"               		value="${resource.def.prefix}Link-edit${resource.def.suffix}"/>
+	<property name="translator.linkedit.options"       		value="MAP,RENT,SSI(@{ssi_info}),COMPAT(PM5)"/>
+	<property name="translator.iebgener"               		value="${resource.def.prefix}IEBGENER${resource.def.suffix}"/>
+	<property name="translator.iebgener.options"       		value=""/>
+	<property name="translator.linkedit.deck"     			value="${resource.def.prefix}Link-edit using linkage-editor deck${resource.def.suffix}"/>
+	<property name="translator.linkedit.deck.options"  		value="MAP,RENT,SSI(@{ssi_info}),COMPAT(PM5)"/>
+	<property name="translator.db2bind"                		value="${resource.def.prefix}DB2 BIND${resource.def.suffix}"/>
+	<property name="translator.error.feedback.options"      value=",ADATA,EXIT(ADEXIT(ELAXMGUX))"/>
+	<property name="translator.idcams.delete"               value="${resource.def.prefix}IDCAMS-DELETE${resource.def.suffix}"/>
+	<property name="translator.idcams.define"               value="${resource.def.prefix}IDCAMS-DEFINE${resource.def.suffix}"/>
+	<property name="translator.idcams.repro"                value="${resource.def.prefix}IDCAMS-REPRO${resource.def.suffix}"/>
+	<property name="translator.idcams.print"                value="${resource.def.prefix}IDCAMS-PRINT${resource.def.suffix}"/>
+	<property name="translator.ant.snippet"                 value="${resource.def.prefix}Ant-Snippet${resource.def.suffix}"/>
+	<property name="translator.ant.xml"                     value="${resource.def.prefix}Ant-XML${resource.def.suffix}"/>
+	<property name="translator.hfs.build"                   value="${resource.def.prefix}HFS Translator${resource.def.suffix}"/>
+
+	<!-- Language Definition Names -->
+	<property name="langdef.bms"                 value="${resource.def.prefix}BMS map processing${resource.def.suffix}"/>
+	<property name="langdef.mfs"                 value="${resource.def.prefix}MFSGEN Utility${resource.def.suffix}"/>
+	<property name="langdef.cobol"               value="${resource.def.prefix}COBOL compilation${resource.def.suffix}"/>
+	<property name="langdef.cobol.link"          value="${resource.def.prefix}COBOL compilation and link-edit${resource.def.suffix}"/>
+	<property name="langdef.cobol.cics.link"     value="${resource.def.prefix}COBOL compilation (CICS) and link-edit${resource.def.suffix}"/>
+	<property name="langdef.cobol.cicsdb2.link"  value="${resource.def.prefix}COBOL compilation (CICS&amp;DB2) and link-edit${resource.def.suffix}"/>
+	<property name="langdef.copybook"            value="${resource.def.prefix}Copybook (no translators)${resource.def.suffix}"/>
+	<property name="langdef.linkedit"            value="${resource.def.prefix}Link-edit${resource.def.suffix}"/>
+	<property name="langdef.idcams.vsam"         value="${resource.def.prefix}IDCAMS-VSAM${resource.def.suffix}"/>
+	<property name="langdef.hfs"                 value="${resource.def.prefix}HFS LangDef${resource.def.suffix}"/>
+
+	<!-- Initialize the language definition generation tool -->
+	<ld:init
+		repositoryAddress="${repositoryAddress}"
+		userId="${userId}"
+		password="${password}"
+		projectArea="${projectArea}"
+		/>
+
+	<!-- Create data set definitions -->
+	<target name="dsdefs" description="Create data set definitions">
+		<!-- zFolders -->
+		<ld:dsdef name="${dsdef.bind.source}" dsName="BIND" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.bms.source}" dsName="BMS" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.mfs.source}" dsName="MFS" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.cobol.source}" dsName="COBOL" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.copybook}" dsName="COPYBOOK" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.link}" dsName="LINK" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.rexx}" dsName="REXX" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.vsam.data}" dsName="VSAMDATA" dsDefUsageType="0" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+
+		<!-- New data sets -->
+		<ld:dsdef name="${dsdef.obj}" dsName="OBJ"  dsDefUsageType="1" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.seqobj}" dsName="SEQOBJ"  dsDefUsageType="1" dsType="1"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.dbrm}" dsName="DBRM"  dsDefUsageType="1" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.load}" dsName="LOAD"  dsDefUsageType="1" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="U" recordLength="0" blockSize="32760" />
+		<ld:dsdef name="${dsdef.bmscpybk}" dsName="BMSCPYBK" dsDefUsageType="1" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="FB" recordLength="80" blockSize="0" />
+		<ld:dsdef name="${dsdef.mfs.tformat}" dsName="TFORMAT" dsDefUsageType="1" dsType="0"
+			spaceUnits="cyls" primaryQuantity="1" secondaryQuantity="1"
+			recordFormat="U" recordLength="0" blockSize="32760" />
+
+		<!-- Temporary data set -->
+		<ld:dsdef name="${dsdef.temp}" dsDefUsageType="2" prefixDSN="false" dsType="9"
+			spaceUnits="trks" primaryQuantity="5" secondaryQuantity="5"
+			recordFormat="" recordLength="" blockSize="" directoryBlocks=""
+			genericUnit="VIO" />
+		<ld:dsdef name="${dsdef.temp.obj}" dsName="&amp;&amp;TEMPOBJ" dsDefUsageType="2" prefixDSN="false" dsType="9"
+			spaceUnits="trks" primaryQuantity="5" secondaryQuantity="5"
+			recordFormat="" recordLength="" blockSize="" directoryBlocks=""
+			genericUnit="VIO" />
+		<ld:dsdef name="${dsdef.temp.mfs}" dsName="&amp;&amp;SEQBLK" dsDefUsageType="2" prefixDSN="false" dsType="9"
+			spaceUnits="trks" primaryQuantity="5" secondaryQuantity="5"
+			recordFormat="" recordLength="" blockSize="" directoryBlocks=""
+			genericUnit="VIO" />
+		<ld:dsdef name="${dsdef.temp.pds}" dsName="&amp;&amp;TEMPPDS" dsDefUsageType="2" prefixDSN="false" dsType="3"
+			spaceUnits="trks" primaryQuantity="5" secondaryQuantity="5"
+			recordFormat="FB" recordLength="80" blockSize="0" directoryBlocks="5"
+			genericUnit="VIO" />
+
+		<!-- Existing data sets -->
+		<ld:dsdef name="${dsdef.assembler}"      dsName="${prefix.asm}.SASMMOD1" dsMember="ASMA90" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.cobol.compiler}" dsName="${prefix.cobol}.SIGYCOMP" dsMember="IGYCRCTL" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.cobol.sigycomp}" dsName="${prefix.cobol}.SIGYCOMP" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.linkeditor}"     dsMember="IEWBLINK" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.iebgener}"       dsMember="IEBGENER" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.idcams}"         dsMember="IDCAMS" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.sys1.maclib}"    dsName="SYS1.MACLIB" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.cee.sceelked}"   dsName="CEE.SCEELKED" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.dummy}"   		 dsName="NULLFILE" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.cics.sdfhcob}"   dsName="${prefix.cics}.SDFHCOB" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.cics.sdfhload}"  dsName="${prefix.cics}.SDFHLOAD" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.cics.sdfhmac}"   dsName="${prefix.cics}.SDFHMAC" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.db2.sdsnload}"   dsName="${prefix.db2}.SDSNLOAD" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.rdz.sfekload}"   dsName="${prefix.rdz}.SFEKLOAD" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.ims.sdfsmac}"    dsName="${prefix.ims1}.SDFSMAC" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.ims.referal}"    dsName="${prefix.ims2}.REFERAL" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.ims.sdfsresl}"   dsName="${prefix.ims2}.SDFSRESL" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.mfs.phase1}"     dsName="${prefix.ims2}.SDFSRESL" dsMember="DFSUPAA0" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.mfs.phase2}"     dsName="${prefix.ims2}.SDFSRESL" dsMember="DFSUNUB0" dsDefUsageType="3" prefixDSN="false"/>
+		<ld:dsdef name="${dsdef.vsam.file}"      dsName="TESTVSAM" dsDefUsageType="3" prefixDSN="true"/>
+	</target>
+
+	<!-- Create translators -->
+	<target name="translators" description="Create translators"
+		depends="translators.common,translators.no_error_feedback,translators.error_feedback,translators.bind_1,translators.bind_2"/>
+
+	<target name="translators.common">
+		<ld:translator name="${translator.bms.obj}" dataSetDefinition="${dsdef.assembler}"
+			defaultOptions="${translator.bms.obj.options}"
+			maxRC="0">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhmac}"/>
+				<ld:allocation dataSetDefinition="${dsdef.sys1.maclib}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSPUNCH" dataSetDefinition="${dsdef.temp.obj}" keep="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.bms.copy}" dataSetDefinition="${dsdef.assembler}"
+			defaultOptions="${translator.bms.copy.options}"
+			maxRC="0">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhmac}"/>
+				<ld:allocation dataSetDefinition="${dsdef.sys1.maclib}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSPUNCH" dataSetDefinition="${dsdef.bmscpybk}" member="true" output="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.linkedit}" dataSetDefinition="${dsdef.linkeditor}"
+			defaultOptions="${translator.linkedit.options}" linkedit="true"
+			maxRC="0">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.obj}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cee.sceelked}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.temp.obj}" condition="&lt;not&gt;&lt;isset property=&quot;useSeqObj&quot;/&gt;&lt;/not&gt;"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.seqobj}" member="true" condition="&lt;isset property=&quot;useSeqObj&quot;/&gt;" />
+			<ld:allocation name="SYSLMOD"  dataSetDefinition="${dsdef.load}" member="true" output="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.linkedit.deck}" dataSetDefinition="${dsdef.linkeditor}"
+			defaultOptions="${translator.linkedit.deck.options}" linkedit="true"
+			maxRC="0">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.obj}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cee.sceelked}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSLIN"   input="true"/>
+			<ld:allocation name="SYSLMOD"  dataSetDefinition="${dsdef.load}" member="true" output="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.iebgener}" dataSetDefinition="${dsdef.iebgener}" ddnamelist=",,,,SYSIN,SYSPRINT,,IN,OUT" 
+			maxRC="4" >
+			<ld:allocation name="SYSIN"    dataSetDefinition="${dsdef.dummy}"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true" publishType="2"/>
+			<ld:allocation name="IN"       dataSetDefinition="${dsdef.temp.obj}" keep="true"/>
+			<ld:allocation name="OUT"      dataSetDefinition="${dsdef.seqobj}" member="true" output="true" outputName="MT@{current.time}" outputNameKind="USE_PATTERN"/>
+		</ld:translator>
+
+		<ld:translator name="${translator.idcams.delete}" dataSetDefinition="${dsdef.idcams}" maxRC="8">
+			<ld:allocation name="SYSIN"    instream=" DELETE '${team.enterprise.scm.resourcePrefix}.TESTVSAM'" usedAsInput="false"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}"  publish="true"/>
+		</ld:translator>
+		<ld:translator name="${translator.idcams.define}" dataSetDefinition="${dsdef.idcams}" maxRC="0">
+			<ld:allocation name="SYSIN"    instream=" DEFINE CLUSTER (NAME('${team.enterprise.scm.resourcePrefix}.TESTVSAM') -           &#13;&#10;                 CYL(1 1) -                                    &#13;&#10;                 VOL(${volser}) -                                 &#13;&#10;                 KEYS(10 0) -                                  &#13;&#10;                 RECORDSIZE(10 200) -                          &#13;&#10;                 SHAREOPTIONS(4,3) -                           &#13;&#10;                 SPEED UNIQUE SPANNED) -                       &#13;&#10;         INDEX  (NAME('${team.enterprise.scm.resourcePrefix}.TESTVSAM.INDEX')) -    &#13;&#10;         DATA   (NAME('${team.enterprise.scm.resourcePrefix}.TESTVSAM.DATA') -      &#13;&#10;                 CISZ(2048) -                                  &#13;&#10;                 FREESPACE(50 50))                             " usedAsInput="false"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}"  publish="true"/>
+		</ld:translator>
+		<ld:translator name="${translator.idcams.repro}" dataSetDefinition="${dsdef.idcams}" maxRC="0">
+			<ld:allocation name="INPUT"  input="true"/>
+			<ld:allocation name="OUTPUT" dataSetDefinition="${dsdef.vsam.file}"/>
+			<ld:allocation name="SYSIN"  instream=" REPRO INFILE(INPUT) OUTFILE(OUTPUT)" usedAsInput="false"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+		</ld:translator>
+		<ld:translator name="${translator.idcams.print}" dataSetDefinition="${dsdef.idcams}" maxRC="0">
+			<ld:allocation name="INPUT" dataSetDefinition="${dsdef.vsam.file}"/>
+			<ld:allocation name="SYSIN" instream=" PRINT INFILE(INPUT)" usedAsInput="false"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+		</ld:translator>
+		<ld:translator name="${translator.ant.snippet}" callMethod="3" 
+			antSnippet="&lt;echo message=&quot;Testing ant snippets&quot; /&gt;&#13;&#10;&lt;echo message=&quot;${buildDefinitionId}-${buildLabel}&quot; /&gt;&#13;&#10;&lt;echo message=&quot;Making test directories&quot; /&gt;&#13;&#10;&lt;mkdir dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir1&quot;/&gt;&#13;&#10;&lt;mkdir dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir2&quot;/&gt;&#13;&#10;&lt;mkdir dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir3&quot;/&gt;&#13;&#10;&lt;mkdir dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir4&quot;/&gt;&#13;&#10;&lt;mkdir dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir5&quot;/&gt;&#13;&#10;&lt;mkdir dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir6&quot;/&gt;&#13;&#10;&lt;mkdir dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir7&quot;/&gt;&#13;&#10;&lt;echo message=&quot;Deleting test directories&quot; /&gt;&#13;&#10;&lt;delete dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir1&quot;/&gt;&#13;&#10;&lt;delete dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir2&quot;/&gt;&#13;&#10;&lt;delete dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir3&quot;/&gt;&#13;&#10;&lt;delete dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir4&quot;/&gt;&#13;&#10;&lt;delete dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir5&quot;/&gt;&#13;&#10;&lt;delete dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir6&quot;/&gt;&#13;&#10;&lt;delete dir=&quot;${team.enterprise.scm.fetchDestination}/testAntDir7&quot;/&gt;&#13;&#10;&lt;echo message=&quot;Finish testing ant snippets&quot; /&gt;"
+			maxRC="0"/>
+	    <ld:translator name="${translator.ant.xml}" callMethod="4" 
+	    	commandMember="${team.enterprise.scm.fetchDestination}/MortgageApplication-VSAMdata\testAnt.xml" 
+	    	maxRC="0"/>
+	    <ld:translator name="${translator.hfs.build}" callMethod="4" commandMember="${team.enterprise.scm.fetchDestination}/MortgageApplication-HFSproject/buildHFS.xml" defaultOptions="zipname" description="Builds HFS folders from a zComponent project" maxRC="0" >
+	        <ld:hfsOutput condition="" deployType="" path="${zipname}"/>
+	    </ld:translator>
+
+		<ld:translator name="${translator.mfs.phase1}" dataSetDefinition="${dsdef.mfs.phase1}"
+			defaultOptions="${translator.mfs.phase1.options}"	
+		 	description="First phase of MFS Generate"
+			maxRC="4">
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.ims.sdfsresl}"/>
+			</ld:concatenation>
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.ims.sdfsmac}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true" member="true" />
+			<ld:allocation name="REFIN"    dataSetDefinition="${dsdef.ims.referal}"/>
+			<ld:allocation name="REFOUT"   dataSetDefinition="${dsdef.temp.pds}"/>
+			<ld:allocation name="REFRD"    dataSetDefinition="${dsdef.ims.referal}"/>
+			<ld:allocation name="SYSTEXT"  dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}"     publish="true"/>
+			<ld:allocation name="SEQBLKS"  dataSetDefinition="${dsdef.temp.mfs}" keep="true"/>
+		</ld:translator>
+		<ld:translator name="${translator.mfs.phase2}" dataSetDefinition="${dsdef.mfs.phase2}"
+			defaultOptions="${translator.mfs.phase2.options}"	
+		 	description="Second phase of MFS Generate"
+			maxRC="4">
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.ims.sdfsresl}"/>
+			</ld:concatenation>
+			<ld:allocation name="SEQBLKS" dataSetDefinition="${dsdef.temp.mfs}" />
+			<ld:allocation name="UTPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="FORMAT"  dataSetDefinition="${dsdef.mfs.tformat}"/>
+		</ld:translator>
+	</target>
+
+	<!-- COBOL translators without error feedback -->
+	<target name="translators.no_error_feedback" unless="use.error.feedback">
+		<ld:translator name="${translator.cobol.obj}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.obj.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.bmscpybk}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cobol.sigycomp}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.obj}" member="true" output="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.cobol}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.seqobj}" member="true" output="true" sequential="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.cobol.cics}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.cics.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cobol.sigycomp}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.temp.obj}" keep="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.cobol.cicsdb2}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.cicsdb2.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.bmscpybk}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cobol.sigycomp}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+				<ld:allocation dataSetDefinition="${dsdef.db2.sdsnload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.temp.obj}" keep="true"/>
+			<ld:allocation name="DBRMLIB"  dataSetDefinition="${dsdef.dbrm}" member="true" output="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+	</target>
+
+	<!-- COBOL translators with error feedback -->
+	<target name="translators.error_feedback" if="use.error.feedback">
+		<ld:translator name="${translator.cobol.obj}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.obj.options}${translator.error.feedback.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.bmscpybk}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cobol.sigycomp}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+				<ld:allocation dataSetDefinition="${dsdef.rdz.sfekload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.obj}" member="true" output="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSADATA" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSXMLSD" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.cobol}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.options}${translator.error.feedback.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cobol.sigycomp}"/>
+				<ld:allocation dataSetDefinition="${dsdef.rdz.sfekload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.temp.obj}" keep="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSADATA" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSXMLSD" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.cobol.cics}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.cics.options}${translator.error.feedback.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cobol.sigycomp}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+				<ld:allocation dataSetDefinition="${dsdef.rdz.sfekload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.temp.obj}" keep="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSADATA" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSXMLSD" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+		<ld:translator name="${translator.cobol.cicsdb2}" dataSetDefinition="${dsdef.cobol.compiler}"
+			defaultOptions="${translator.cobol.cicsdb2.options}${translator.error.feedback.options}"
+			maxRC="4">
+			<ld:concatenation name="SYSLIB">
+				<ld:allocation dataSetDefinition="${dsdef.copybook}"/>
+				<ld:allocation dataSetDefinition="${dsdef.bmscpybk}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhcob}"/>
+			</ld:concatenation>
+			<ld:concatenation name="TASKLIB">
+				<ld:allocation dataSetDefinition="${dsdef.cobol.sigycomp}"/>
+				<ld:allocation dataSetDefinition="${dsdef.cics.sdfhload}"/>
+				<ld:allocation dataSetDefinition="${dsdef.db2.sdsnload}"/>
+				<ld:allocation dataSetDefinition="${dsdef.rdz.sfekload}"/>
+			</ld:concatenation>
+			<ld:allocation name="SYSIN"    input="true"/>
+			<ld:allocation name="SYSLIN"   dataSetDefinition="${dsdef.temp.obj}" keep="true"/>
+			<ld:allocation name="DBRMLIB"  dataSetDefinition="${dsdef.dbrm}" member="true" output="true"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}" publish="true"/>
+			<ld:allocation name="SYSADATA" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSXMLSD" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT1"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT2"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT3"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT4"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT5"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT6"   dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUT7"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+	</target>
+
+	<target name="translators.bind_1" if="use.bind_1">
+		<ld:translator name="${translator.db2bind}" callMethod="2"
+		    commandMember="EXEC '${team.enterprise.scm.resourcePrefix}.REXX(REXXBIND)' '${db2.package} ${team.enterprise.scm.resourcePrefix}.DBRM@{source.member}'"
+			maxRC="0">
+			<ld:allocation name="SYSTSPRT" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUDUMP" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSLIB"   dataSetDefinition="${dsdef.temp}"/>
+		</ld:translator>
+	</target>
+
+	<target name="translators.bind_2" if="use.bind_2">
+		<ld:translator name="${translator.db2bind.bnd}" callMethod="2"
+		    commandMember="EXEC '${team.enterprise.scm.resourcePrefix}.REXX(BNDPROC)'"
+			maxRC="0">
+			<ld:allocation name="INDD" input="true"/>
+			<ld:allocation name="DBRMLIB" dataSetDefinition="${dsdef.dbrm}" member="true"/>
+			<ld:allocation name="SYSTSPRT" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSPRINT" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSUDUMP" dataSetDefinition="${dsdef.temp}"/>
+			<ld:allocation name="SYSLIB"   dataSetDefinition="${dsdef.copybook}"/>
+		</ld:translator>
+	</target>
+
+	<!-- Create language definitions -->
+	<target name="langdefs" description="Create language definitions"
+		depends="langdefs.set_extensions,langdefs.common,langdefs.bind_1,langdefs.bind_2"/>
+
+	<target name="langdefs.set_extensions"
+		depends="langdefs.set_standard_extensions,langdefs.set_nonstandard_extensions"/>
+
+	<target name="langdefs.set_standard_extensions" unless="nonstandard.resource.names">
+		<property name="bms.default_extension" value="bms"/>
+		<property name="mfs.default_extension" value="mfs"/>
+		<property name="cbl.default_extension" value="cbl"/>
+		<property name="cpy.default_extension" value="cpy"/>
+		<property name="lnk.default_extension" value="lnk"/>
+		<property name="bnd.default_extension" value="bnd"/>
+	</target>
+
+	<target name="langdefs.set_nonstandard_extensions" if="nonstandard.resource.names">
+		<property name="bms.default_extension" value=""/>
+		<property name="mfs.default_extension" value=""/>
+		<property name="cbl.default_extension" value=""/>
+		<property name="cpy.default_extension" value=""/>
+		<property name="lnk.default_extension" value=""/>
+		<property name="bnd.default_extension" value=""/>
+	</target>
+
+	<target name="langdefs.common">
+		<ld:langdef name="${langdef.bms}" translators="${translator.bms.copy},${translator.bms.obj},${translator.linkedit}" defaultExtension="${bms.default_extension}"
+			languageCode="ASM" subsystems="" defaultscanner="false"/>
+		<ld:langdef name="${langdef.mfs}" translators="${translator.mfs.phase1},${translator.mfs.phase2}" defaultExtension="${mfs.default_extension}"
+			languageCode="OTH" subsystems="" defaultscanner="false"/>
+		<ld:langdef name="${langdef.idcams.vsam}" translators="${translator.idcams.delete},${translator.idcams.define},${translator.idcams.repro},${translator.idcams.print},${translator.ant.snippet},${translator.ant.xml}" defaultExtension=""
+			languageCode="OTH" subsystems="" defaultscanner="false"/>
+		<ld:langdef name="${langdef.hfs}" translators="${translator.hfs.build}" defaultExtension=""
+			languageCode="OTH" subsystems="" defaultscanner="false">
+        	<ld:scopedProperty name="buildVersion" value="v1"/>
+        	<ld:scopedProperty name="publish.dir" value="HFSOutput"/>
+		</ld:langdef>
+		<ld:langdef name="${langdef.cobol}" translators="${translator.cobol.obj}" defaultExtension="${cbl.default_extension}"
+			languageCode="COB" subsystems="" defaultscanner="false">
+			<ld:dependencytype name="COPY" translators="${translator.cobol.obj}"/>
+			<ld:dependencytype name="++INCLUDE" translators="${translator.cobol.obj}"/>
+			<ld:dependencytype name="SQL INCLUDE" translators="${translator.cobol.obj}"/>
+			<ld:dependencytype name="MACRO" translators="${translator.cobol.obj}"/>
+			<ld:dependencytype name="PROC" translators="${translator.cobol.obj}"/>
+			<ld:scanner name="com.ibm.teamz.metadata.scanner.default"/>
+		</ld:langdef>
+		<ld:langdef name="${langdef.cobol.link}" translators="${translator.cobol},${translator.linkedit}"
+			languageCode="COB" subsystems="" defaultscanner="false">
+			<ld:scopedProperty name="useSeqObj" value="true"/>
+			<ld:dependencytype name="COPY" translators="${translator.cobol}"/>
+			<ld:dependencytype name="++INCLUDE" translators="${translator.cobol}"/>
+			<ld:dependencytype name="SQL INCLUDE" translators="${translator.cobol}"/>
+			<ld:dependencytype name="MACRO" translators="${translator.cobol}"/>
+			<ld:dependencytype name="PROC" translators="${translator.cobol}"/>
+			<ld:scanner name="com.ibm.teamz.metadata.scanner.default"/>
+		</ld:langdef>
+		<ld:langdef name="${langdef.cobol.cics.link}" translators="${translator.cobol.cics},${translator.iebgener},${translator.linkedit}"
+			languageCode="COB" subsystems="" defaultscanner="false">
+			<ld:dependencytype name="COPY" translators="${translator.cobol.cics}"/>
+			<ld:dependencytype name="++INCLUDE" translators="${translator.cobol.cics}"/>
+			<ld:dependencytype name="SQL INCLUDE" translators="${translator.cobol.cics}"/>
+			<ld:dependencytype name="MACRO" translators="${translator.cobol.cics}"/>
+			<ld:dependencytype name="PROC" translators="${translator.cobol.cics}"/>
+			<ld:scanner name="com.ibm.teamz.metadata.scanner.default"/>
+		</ld:langdef>
+		<ld:langdef name="${langdef.cobol.cicsdb2.link}" translators="${translator.cobol.cicsdb2},${translator.iebgener},${translator.linkedit}"
+			languageCode="COB" subsystems="" defaultscanner="false">
+			<ld:dependencytype name="COPY" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="++INCLUDE" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="SQL INCLUDE" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="MACRO" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="PROC" translators="${translator.cobol.cicsdb2}"/>
+			<ld:scanner name="com.ibm.teamz.metadata.scanner.default"/>
+		</ld:langdef>
+		<ld:langdef name="${langdef.copybook}" translators="" defaultExtension="${cpy.default_extension}"
+			languageCode="COB" subsystems="" defaultscanner="false">
+			<ld:scanner name="com.ibm.teamz.metadata.scanner.default"/>
+		</ld:langdef>
+		<ld:langdef name="${langdef.linkedit}" translators="${translator.linkedit.deck}" defaultExtension="${lnk.default_extension}"
+			languageCode="OTH" subsystems="" defaultscanner="false">
+			<ld:dependencytype name="LINK" translators="${translator.linkedit.deck}"/>
+		</ld:langdef>
+	</target>
+
+	<target name="langdefs.bind_1" if="use.bind_1">
+		<ld:langdef name="${langdef.cobol.cicsdb2.link}" translators="${translator.cobol.cicsdb2},${translator.linkedit},${translator.db2bind}"
+			languageCode="COB" subsystems="" defaultscanner="false">
+			<ld:dependencytype name="COPY" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="++INCLUDE" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="SQL INCLUDE" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="MACRO" translators="${translator.cobol.cicsdb2}"/>
+			<ld:dependencytype name="PROC" translators="${translator.cobol.cicsdb2}"/>
+			<ld:scanner name="com.ibm.teamz.metadata.scanner.default"/>
+		</ld:langdef>
+	</target>
+
+	<target name="langdefs.bind_2" if="use.bind_2">
+		<ld:langdef name="${langdef.db2bind.bnd}" translators="${translator.db2bind.bnd}" defaultExtension="${bnd.default_extension}"
+			languageCode="BIN" subsystems="" defaultscanner="false"/>
+	</target>
+
+	<!-- Resolve metadata -->
+	<target name="resolvemetadata" description="Resolve metadata"
+		depends="resolvemetadata.standard,resolvemetadata.nonstandard"/>
+
+	<target name="resolvemetadata.standard" unless="nonstandard.resource.names">
+		<ld:filemetadata>
+			<ld:filemetadatarule match="REXX/.*$" name="team.enterprise.build.alwaysload" value="true"/>
+		</ld:filemetadata>
+		<ld:resolvemetadata usedefaultrules="false">
+			<ld:dsdefrule match="BIND" dataSetDefinition="${dsdef.bind.source}"/>
+			<ld:dsdefrule match="COPYBOOK" dataSetDefinition="${dsdef.copybook}"/>
+			<ld:dsdefrule match="REXX" dataSetDefinition="${dsdef.rexx}"/>
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSCMORT"/>
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSCMORT" usedefaultrules="false">
+			<ld:dsdefrule match="BMS" dataSetDefinition="${dsdef.bms.source}"/>
+			<ld:dsdefrule match="MFS" dataSetDefinition="${dsdef.mfs.source}"/>
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}"/>
+			<ld:langdefrule match=".*/EPSCSMRT\.cbl$" languageDefinition="${langdef.cobol.cics.link}"/>
+			<ld:langdefrule match=".*/EPSCMORT\.cbl$" languageDefinition="${langdef.cobol.cicsdb2.link}"/>
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSCSMRD"/>
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSCSMRD" usedefaultrules="false">
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}"/>
+			<ld:langdefrule match=".*/EPSCSMRD\.cbl$" languageDefinition="${langdef.cobol.cics.link}"/>
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSMLIST"/>
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSMLIST" usedefaultrules="false">
+			<ld:dsdefrule match="BMS" dataSetDefinition="${dsdef.bms.source}"/>
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}"/>
+			<ld:dsdefrule match="COPYBOOK" dataSetDefinition="${dsdef.copybook}"/>
+			<ld:dsdefrule match="LINK" dataSetDefinition="${dsdef.link}"/>
+			<ld:langdefrule match=".*/EPSMLIST\.cbl$" languageDefinition="${langdef.cobol}"/>
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSMPMT"/>
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSMPMT" usedefaultrules="false">
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}"/>
+			<ld:langdefrule match=".*/EPSMPMT\.cbl$" languageDefinition="${langdef.cobol.link}"/>
+		</ld:resolvemetadata>
+		<ld:resolvemetadata projectRoot="../MortgageApplication-VSAMdata" usedefaultrules="false">
+			<ld:dsdefrule match="VSAMdata" dataSetDefinition="${dsdef.vsam.data}" />
+			<ld:langdefrule match=".*/.*\.dat$" languageDefinition="${langdef.idcams.vsam}" />
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-VSAMdata">
+			<ld:linedelimiterrule match=".*/.*\.dat$" value="Platform"/>
+		</ld:filemetadata>
+		<ld:resolvemetadata projectRoot="../MortgageApplication-HFSproject" usedefaultrules="false">
+			<ld:langdefrule match=".src$"  languageDefinition="${langdef.hfs}"/>
+		</ld:resolvemetadata>
+	</target>
+
+
+	<target name="resolvemetadata.nonstandard" if="nonstandard.resource.names" depends="resolvemetadata.bind_2">
+		<ld:filemetadata>
+			<ld:filemetadatarule match="REXX/.*$" name="team.enterprise.build.alwaysload" value="true" />
+			<ld:linedelimiterrule match=".*/.*.dat$" value="Platform"/>
+		</ld:filemetadata>
+		<ld:resolvemetadata usedefaultrules="false">
+			<ld:dsdefrule match="BIND" dataSetDefinition="${dsdef.bind.source}" />
+			<ld:dsdefrule match="COPYBOOK" dataSetDefinition="${dsdef.copybook}" />
+			<ld:dsdefrule match="REXX" dataSetDefinition="${dsdef.rexx}" />
+			<ld:langdefrule match=".*/.*\.cpy$" languageDefinition="${langdef.copybook}" />
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSCMORT" />
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSCMORT" usedefaultrules="false">
+			<ld:dsdefrule match="BMS" dataSetDefinition="${dsdef.bms.source}" />
+			<ld:dsdefrule match="MFS" dataSetDefinition="${dsdef.mfs.source}" />
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}" />
+			<ld:langdefrule match=".*/EPSCSMRT\.cbl$" languageDefinition="${langdef.cobol.cics.link}" />
+			<ld:langdefrule match=".*/EPSCMORT\.cbl$" languageDefinition="${langdef.cobol.cicsdb2.link}" />
+			<ld:langdefrule match=".*/.*\.bms$" languageDefinition="${langdef.bms}" />
+			<ld:langdefrule match=".*/.*\.mfs$" languageDefinition="${langdef.mfs}" />
+			<ld:langdefrule match=".*/.*\.cbl$" languageDefinition="${langdef.cobol}" />
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSCSMRD" />
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSCSMRD" usedefaultrules="false">
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}" />
+			<ld:langdefrule match=".*/EPSCSMRD\.cbl$" languageDefinition="${langdef.cobol.cics.link}" />
+			<ld:langdefrule match=".*/.*\.cbl$" languageDefinition="${langdef.cobol}" />
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSMLIST" />
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSMLIST" usedefaultrules="false">
+			<ld:dsdefrule match="BMS" dataSetDefinition="${dsdef.bms.source}" />
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}" />
+			<ld:dsdefrule match="COPYBOOK" dataSetDefinition="${dsdef.copybook}" />
+			<ld:dsdefrule match="LINK" dataSetDefinition="${dsdef.link}" />
+			<ld:langdefrule match=".*/EPSMLIST\.cbl$" languageDefinition="${langdef.cobol}" />
+			<ld:langdefrule match=".*/.*\.bms$" languageDefinition="${langdef.bms}" />
+			<ld:langdefrule match=".*/.*\.cbl$" languageDefinition="${langdef.cobol}" />
+			<ld:langdefrule match=".*/.*\.cpy$" languageDefinition="${langdef.copybook}" />
+			<ld:langdefrule match=".*/.*\.lnk$" languageDefinition="${langdef.linkedit}" />
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-EPSMPMT" />
+		<ld:resolvemetadata projectRoot="../MortgageApplication-EPSMPMT" usedefaultrules="false">
+			<ld:dsdefrule match="COBOL" dataSetDefinition="${dsdef.cobol.source}" />
+			<ld:langdefrule match=".*/EPSMPMT\.cbl$" languageDefinition="${langdef.cobol.link}" />
+			<ld:langdefrule match=".*/.*\.cbl$" languageDefinition="${langdef.cobol}" />
+		</ld:resolvemetadata>
+		<ld:resolvemetadata projectRoot="../MortgageApplication-VSAMdata" usedefaultrules="false">
+			<ld:dsdefrule match="VSAMdata" dataSetDefinition="${dsdef.vsam.data}" />
+			<ld:langdefrule match=".*/.*\.dat$" languageDefinition="${langdef.idcams.vsam}" />
+		</ld:resolvemetadata>
+		<ld:filemetadata projectRoot="../MortgageApplication-VSAMdata">
+			<ld:linedelimiterrule match=".*/.*\.dat$" value="Platform"/>
+		</ld:filemetadata>	
+		<ld:resolvemetadata projectRoot="../MortgageApplication-HFSproject" usedefaultrules="false">
+			<ld:langdefrule match=".src$"  languageDefinition="${langdef.hfs}"/>
+		</ld:resolvemetadata>
+	</target>
+
+	<target name="resolvemetadata.bind_2" if="use.bind_2">
+		<ld:resolvemetadata usedefaultrules="false">
+			<ld:langdefrule match=".*/.*\.bnd$" languageDefinition="${langdef.db2bind.bnd}" />
+		</ld:resolvemetadata>
+	</target>
+	
+	<!-- Run zOS.properties for HFS project -->
+	<target name="HFSProperties">
+		<ant dir="../MortgageApplication-HFSproject" target="all" antfile="zosproperties.xml"/>
+	</target>
+
+	<!-- Enable source code data scanning -->
+	<!-- Set source code data -->
+	<target name="sourcecodedata" description="Set source code data">
+		<ld:sourcecodedata projectRoot="../MortgageApplication-EPSMLIST">
+			<ld:sourcecodedatarule match="LINK/EPSMLIST\.lnk$">
+				<ld:dependency logicalName="EPSMLIST" fileType="OBJ" path="SYSLIB" referenceType="LINK"/>
+			</ld:sourcecodedatarule>
+		</ld:sourcecodedata>
+	</target>
+
+	<!-- Delete existing data set definitions, translators and language definitions -->
+	<target name="delete"
+		description="Delete existing data set definitions, translators and language definitions">
+		<ld:deletelangdefs/>
+		<ld:deletetranslators/>
+		<ld:deletedsdefs/>
+		<ld:resolvemetadata clean="true"/>
+		<ld:resolvemetadata clean="true" projectRoot="../MortgageApplication-EPSCMORT"/>
+		<ld:resolvemetadata clean="true" projectRoot="../MortgageApplication-EPSCSMRD"/>
+		<ld:resolvemetadata clean="true" projectRoot="../MortgageApplication-EPSMLIST"/>
+		<ld:resolvemetadata clean="true" projectRoot="../MortgageApplication-EPSMPMT"/>
+	</target>
+
+	<target name="export" description="Export existing system definitions to the specified file">
+		<ld:export file="c:/tmp/export.xml"/>
+	</target>
+
+	<!-- full build -->
+	<target name="all" depends="dsdefs,translators,langdefs,resolvemetadata,HFSProperties,sourcecodedata" description="full build"/>
+
+</project>
