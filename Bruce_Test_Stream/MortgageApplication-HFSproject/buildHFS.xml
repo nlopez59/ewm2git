@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2016. All Rights Reserved.
+   
+    Note to U.S. Government Users Restricted Rights:  
+    Use, duplication or disclosure restricted by GSA ADP Schedule 
+    Contract with IBM Corp. 
+ -->
+<project default="build" name="HFS Build" basedir="." xmlns:ac="antlib:net.sf.antcontrib">
+	
+	<!-- This script builds an HFS directory from a zComponent project. Each HFS directory must have a build.properties
+	     file filling in the specific bits like name of the zip, includes for the zip, etc. -->
+	
+	<taskdef classname="com.ibm.team.build.ant.task.ArtifactFilePublisherTask" name="artifactFilePublisher"/>
+	<taskdef classname="com.ibm.team.build.ant.task.ArtifactLinkPublisherTask" name="artifactLinkPublisher"/>
+	<taskdef classname="com.ibm.team.build.ant.task.LogPublisherTask"          name="logPublisher"/>
+	
+	<target name="init">
+		<!-- This script is run in its containing directory, but we want to work with things from the HFS directory we're building.
+		     Rather than type all this out everywhere, let's give it a short name. -->
+		<!-- Replace with this line once jazz.net is using 603RC1 or later
+		<property name="hfsdir" value="${team.enterprise.scm.fetchDestination}/${source.member.scm.location}"/>-->
+		<property name="hfsdir" value="${team.enterprise.scm.fetchDestination}/${source.project}/src"/>
+		
+		<property file="${hfsdir}/build.properties"/>
+		
+		<!-- multiple scripts reuse this property name, and we pass it back to the main environment, so we must clear it in case it's already set. -->
+		<ac:var name="zipname" unset="true"/>
+		<property name="zipname" value="${zipbasename}_${buildLabel}.zip"/>
+	</target>
+	
+	<target name="build" depends="init">
+		<!-- Execute the script. Not all HFS dirs will have arguments to the script, which is fine, they simply won't be looking at the bogus arg value.
+		     Notes: Requires Line Delimiter is Platform and 'mvsCodePage' so that the files are in EBCDIC. Run zosproperties.xml to set this up.
+		     See https://jazz.net/help-dev/clm/index.jsp?topic=%2Fcom.ibm.team.scm.doc%2Ftopics%2Fr_ee_mvscodepagefileproperty.html -->
+		<exec failonerror="true" executable="/bin/sh" dir="${hfsdir}" output="out.txt" logError="true">
+			<arg value="-e"/>
+			<arg value="${buildscript}"/>
+			<arg value="${buildarg1}"/>
+		</exec>
+		
+		<!-- Publish listings -->
+		<fileset id="listings" dir="${hfsdir}" includes="*.lst" casesensitive="false"/>
+		<ac:for list="${toString:listings}" delimiter=";" param="file">
+			<sequential>
+				<logPublisher
+					buildResultUUID="${buildResultUUID}"
+					filePath="${hfsdir}/@{file}"
+					label="${zipbasename} listing: @{file}"
+					passwordfile="${passwordFile}"
+					repositoryAddress="${repositoryAddress}"
+					userId="${userId}"
+				/>
+			</sequential>
+		</ac:for>
+		
+		<!-- Build zip -->
+		<zip destfile="${team.enterprise.build.hfs.outputdir}/${zipname}" whenempty="fail" encoding="UTF-8">
+			<fileset dir="${hfsdir}" includes="${includes}"/>
+		</zip>
+		
+		<!-- Since that was successful, delete any old copies -->
+		<echo>Cleaning up older .zip files...</echo>
+		<delete failonerror="true" verbose="true">
+			<fileset dir="${team.enterprise.build.hfs.outputdir}">
+				<include name="${zipbasename}_*.zip"/>
+			    <exclude name="${zipname}"/>
+			</fileset>
+		</delete>
+		
+		<!-- Copy the files to the staging dir, used to build libraries.zip -->
+		<antcall target="copyToStaging"/>
+		
+		<!-- Upload zip -->
+		<artifactFilePublisher filePath="${team.enterprise.build.hfs.outputdir}/${zipname}"
+			buildResultUUID="${buildResultUUID}"
+			repositoryAddress="${repositoryAddress}"
+			userId="${userId}"
+			passwordfile="${passwordFile}"
+			label="${zipbasename} ZIP for RTC"/>
+		
+		<!-- Copy to the public dir and publish its link -->
+		<antcall target="copyToPub"/>
+	</target>
+	
+	<target name="copyToStaging" depends="init">
+		<property name="stageDir" value="${team.enterprise.scm.fetchDestination}/staging" />
+		<property name="toolkitDir" value="${stageDir}/buildsystem/buildtoolkit" />
+		<property name="scmDir" value="${stageDir}/scmtools/eclipse" />
+		
+		<mkdir dir="${stageDir}" />
+		<mkdir dir="${toolkitDir}" />
+		<mkdir dir="${scmDir}" />
+		
+		<!-- Anything for the toolkit dir? -->
+		<ac:if>
+			<or><isset property="toolkitIncludes"/><not><equals arg1="" arg2="${toolkitIncludes}"/></not></or>
+			<ac:then>
+				<copy todir="${toolkitDir}">
+					<fileset dir="${hfsdir}" includes="${toolkitIncludes}"/>
+				</copy>
+			</ac:then>
+		</ac:if>
+		
+		<!-- Anything for the scm dir? -->
+		<ac:if>
+			<or><isset property="scmIncludes"/><not><equals arg1="" arg2="${scmIncludes}"/></not></or>
+			<ac:then>
+				<copy todir="${scmDir}">
+					<fileset dir="${hfsdir}" includes="${scmIncludes}"/>
+					<flattenmapper/>
+				</copy>
+			</ac:then>
+		</ac:if>
+	</target>
+	
+	<target name="copyToPub" depends="init">
+		<property name="publishHFS.dir" value="${publish.dir}/zos.samples.${buildVersion}"/>
+		<mkdir dir="${publishHFS.dir}/${buildLabel}"/>
+		
+		<copy todir="${publishHFS.dir}/${buildLabel}" file="${team.enterprise.build.hfs.outputdir}/${zipname}"/>
+		<chmod perm="744" file="${publishHFS.dir}/${buildLabel}/${zipname}"/>
+		
+		<artifactLinkPublisher repositoryaddress="${repositoryAddress}" userId="${userId}" passwordFile="${passwordFile}" buildResultUUID="${buildResultUUID}"
+			localfilepath="${team.enterprise.build.hfs.outputdir}/${zipname}"
+			url="ftp://mvs269.rtp.raleigh.ibm.com/pub/zos.samples.${buildVersion}/${buildLabel}/${zipname}"
+			label="Link to externally published ${zipbasename} ZIP" />
+	</target>
+	
+</project>

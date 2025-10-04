@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2012,2013. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:
+    Use, duplication or disclosure restricted by GSA ADP Schedule
+    Contract with IBM Corp.
+ -->
+
+<project name="MortgageApplication-VSAMdata" default="all" xmlns:ld="antlib:com.ibm.team.enterprise.zos.systemdefinition.toolkit">
+	<description>Sample build script</description>
+
+	<target name="echo">
+		<echo message="Testing an Ant xml" />
+	</target>
+
+	<!-- full build -->
+	<target name="all" depends="echo" description="full build"/>
+
+</project>

@@ -1,0 +1,4 @@
+# Initialized by scmMig.sh (IBM DevOps Team Sample)
+**              zos-working-tree-encoding=ibm-1047 git-encoding=utf-8
+.gitattributes  zos-working-tree-encoding=iso8859-1 git-encoding=utf-8
+text            eol=lf
