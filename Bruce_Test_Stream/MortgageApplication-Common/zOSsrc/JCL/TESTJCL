@@ -1,0 +1,52 @@
+//STOSPACE JOB CLASS=A,MSGCLASS=X,NOTIFY=&SYSUID
+//*
+//PROCLIB JCLLIB ORDER=DSN900.PROCLIB
+//*
+//*---------------------------------------------------------------------
+//* STOSPACE UTILITY TO UPDATE INFORMATION IN DSN9 CATALOG FOR CCM
+//*---------------------------------------------------------------------
+//STOSPJTS EXEC DSNUPROC,SYSTEM=DS90,UID='DOHERTL',UTPROC=''
+//*
+//SYSPRINT   DD SYSOUT=*
+//DSNUPROC.SYSIN DD *
+ STOSPACE STOGROUP (ST902)
+//*
+//*
+//*---------------------------------------------------------------------
+//* SQL TO GET COUNTS FROM THE CATALOG TABLES FOR CCM
+//*---------------------------------------------------------------------
+//SQLJTS   EXEC PGM=IKJEFT01,DYNAMNBR=20
+//SYSTSPRT   DD SYSOUT=*
+//SYSPRINT   DD SYSOUT=*
+//SYSUDUMP   DD SYSOUT=*
+//SYSTSIN    DD *
+ DSN SYSTEM(DS90)
+  RUN PROGRAM(DSNTEP2) PLAN(DSNTEP91) -
+  LIB('DSN900.RUNLIB.LOAD')
+ END
+/*
+//SYSIN      DD DSN=DOHERTL.SPUFI(STOSPJTS),DISP=SHR
+//*
+//*---------------------------------------------------------------------
+//* STOSPACE UTILITY TO UPDATE INFORMATION IN DSN9 CATALOG FOR CCM
+//*---------------------------------------------------------------------
+//STOSPCCM EXEC DSNUPROC,SYSTEM=DSN9,UID='DOHERTL',UTPROC=''
+//*
+//SYSPRINT   DD SYSOUT=*
+//DSNUPROC.SYSIN DD *
+ STOSPACE STOGROUP (WK1)
+//*
+//*---------------------------------------------------------------------
+//* SQL TO GET COUNTS FROM THE CATALOG TABLES FOR CCM
+//*---------------------------------------------------------------------
+//SQLCCM   EXEC PGM=IKJEFT01,DYNAMNBR=20
+//SYSTSPRT   DD SYSOUT=*
+//SYSPRINT   DD SYSOUT=*
+//SYSUDUMP   DD SYSOUT=*
+//SYSTSIN    DD *
+ DSN SYSTEM(DSN9)
+  RUN PROGRAM(DSNTEP2) PLAN(DSNTEP91) -
+  LIB('DB9WK1.RUNLIB.LOAD')
+ END
+/*
+//SYSIN      DD DSN=DOHERTL.SPUFI(STOSPCCM),DISP=SHR
