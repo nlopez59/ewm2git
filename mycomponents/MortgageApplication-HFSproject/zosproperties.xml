@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+    Licensed Materials - Property of IBM
+    (c) Copyright IBM Corporation 2012,2016. All Rights Reserved.
+
+    Note to U.S. Government Users Restricted Rights:
+    Use, duplication or disclosure restricted by GSA ADP Schedule
+    Contract with IBM Corp.
+ -->
+
+<project name="com.ibm.rtcee.zos" default="all" xmlns:ld="antlib:com.ibm.team.enterprise.zos.systemdefinition.toolkit">
+	<description>zOS encoding properties</description>
+	
+	<!-- Resolve metadata -->
+	<target name="resolvemetadata" description="Resolve metadata">
+		<!-- set everything under src to be EBCDIC, then change Ant-related files back to use their default (UTF-8) -->
+		<ld:filemetadata>
+			<ld:filemetadatarule match="src/.*$" name="mvsCodePage" value="IBM-1047"/>
+			<ld:linedelimiterrule match=".*/.*.s$" value="Platform"/>
+			<ld:linedelimiterrule match=".*/.*.sh$" value="Platform"/>
+		</ld:filemetadata>
+		<ld:filemetadata>
+			<ld:filemetadatarule match="src/build.properties$" name="mvsCodePage" value=""/>
+		</ld:filemetadata>
+	</target>
+
+	<!-- full build -->
+	<target name="all" depends="resolvemetadata" description="full build"/>
+
+</project>

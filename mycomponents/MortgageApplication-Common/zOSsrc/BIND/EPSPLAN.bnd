@@ -1,0 +1,16 @@
+DSN SYSTEM(DSN9)            
+   BIND PLAN(EPSCMORT)      -
+        PKLIST(DEV2.*)      -
+        OWNER(DEVDBA)       -
+        QUALIFIER(DEVDBA)   -
+        VALIDATE(BIND)      -
+        ISOLATION(CS)       -
+        EXPLAIN(NO)         -
+        FLAG(I)             -
+        CACHESIZE(256)      -
+        ACQUIRE(ALLOCATE)   -
+        RELEASE(DEALLOCATE) -
+        RETAIN              -
+        ENABLE(CICS)        -
+        ENCODING(EBCDIC)     
+END                         
